@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta http-equiv="cleartype" content="on" />
+    <style>
+      html,
+      body,
+      canvas {
+        width: 100%;
+        height: 100%;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+      }
+
+      #content {
+        width: 1000px;
+        height: 1000px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="content"></div>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0-beta.3/phaser.min.js"
+      integrity="sha512-9HDvjtAyJdajx3xHkvmilIYbA9REVxbjo0SvVqjFZDLiuCFR13bZ0yXZGYRGXextLr4qZTe1ucwI1zit0thLQQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </body>
+
+  <script>
+    const padding = 10;
+    const minimumWidth = 200;
+    const minimumHeight = 50;
+
+    class MenuButton extends Phaser.GameObjects.Rectangle {
+      constructor(scene, x, y, text, onClick) {
+        super(scene, x, y);
+        scene.add.existing(this);
+        this.setOrigin(0, 0);
+
+        this.label = scene.add
+          .text(x + padding, y + padding, text)
+          .setFontSize(18)
+          .setAlign('center');
+
+        const labelWidth = this.label.width + padding;
+        const labelHeight = this.label.height + padding;
+
+        this.width = labelWidth >= minimumWidth ? labelWidth : minimumWidth;
+        this.height = labelHeight >= minimumHeight ? labelHeight : minimumHeight;
+
+        this.setInteractive({ useHandCursor: true })
+          .on('pointerover', this.enterMenuButtonHoverState)
+          .on('pointerout', this.enterMenuButtonRestState)
+          .on('pointerdown', this.enterMenuButtonActiveState)
+          .on('pointerup', this.enterMenuButtonHoverState);
+
+        if (onClick) {
+          this.on('pointerup', onClick);
+        }
+
+        this.enterMenuButtonRestState();
+      }
+
+      enterMenuButtonHoverState() {
+        this.label.setColor('#000000');
+        this.setFillStyle(0x888888);
+      }
+
+      enterMenuButtonRestState() {
+        this.label.setColor('#FFFFFF');
+        this.setFillStyle(0x888888);
+      }
+
+      enterMenuButtonActiveState() {
+        this.label.setColor('#BBBBBB');
+        this.setFillStyle(0x444444);
+      }
+    }
+
+    class Boot extends Phaser.Scene {
+      constructor() {
+        super('Boot');
+      }
+
+      init() {
+        // Used to prepare data
+      }
+
+      preload() {
+        const halfWidth = 200;
+        const halfHeight = 200;
+
+        const progressBarHeight = 100;
+        const progressBarWidth = 400;
+
+        const progressBarContainer = this.add.rectangle(
+          halfWidth,
+          halfHeight,
+          progressBarWidth,
+          progressBarHeight,
+          0x000000,
+        );
+        const progressBar = this.add.rectangle(
+          halfWidth + 20 - progressBarContainer.width * 0.5,
+          halfHeight,
+          10,
+          progressBarHeight - 20,
+          0x888888,
+        );
+
+        const loadingText = this.add.text(halfWidth - 75, halfHeight - 100, 'Loading...').setFontSize(24);
+        const percentText = this.add.text(halfWidth - 25, halfHeight, '0%').setFontSize(24);
+        const assetText = this.add.text(halfWidth - 25, halfHeight + 100, '').setFontSize(24);
+
+        this.load.on('progress', (value) => {
+          progressBar.width = (progressBarWidth - 30) * value;
+
+          const percent = value * 100;
+          percentText.setText(`${percent}%`);
+        });
+
+        this.load.on('fileprogress', (file) => {
+          assetText.setText(file.key);
+        });
+
+        this.load.on('complete', () => {
+          loadingText.destroy();
+          percentText.destroy();
+          assetText.destroy();
+          progressBar.destroy();
+          progressBarContainer.destroy();
+
+          this.scene.start('MainMenu');
+        });
+
+        this.load.image('man', 'assets/sprites/character.png');
+      }
+
+      create(data) {
+        // Used to add objects to your game
+      }
+
+      update(time, delta) {
+        // Used to update your game. This function runs constantly
+      }
+    }
+
+
+	class MainMenuScene extends Phaser.Scene {
+     constructor() {
+        super('MainMenu');
+      }
+      create() {
+        console.log("Created")
+        this.add
+          .text(100, 50, 'This is a sample main menu. Click the "Start" button below to run your game.', {
+            color: '#FFFFFF',
+          })
+          .setFontSize(24);
+
+        new MenuButton(this, 100, 150, 'Start Game', () => {
+          this.scene.start('Game');
+        });
+
+        new MenuButton(this, 100, 250, 'Settings', () => console.log('settings button clicked'));
+
+        new MenuButton(this, 100, 350, 'Help', () => console.log('help button clicked'));
+      }
+    }
+
+    const gameConfig = {
+      title: 'Sample',
+
+      type: Phaser.AUTO,
+
+      scale: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+
+      scene: [Boot, MainMenuScene],
+
+      physics: {
+        default: 'arcade',
+        arcade: {
+          debug: true,
+        },
+      },
+
+      parent: 'content',
+      backgroundColor: '#000000',
+    };
+
+    const game = new Phaser.Game(gameConfig);
+  </script>
+</html>
